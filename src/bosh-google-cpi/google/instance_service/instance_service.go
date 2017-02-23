@@ -1,9 +1,5 @@
 package instance
 
-import (
-	"google.golang.org/api/compute/v1"
-)
-
 type Service interface {
 	AddAccessConfig(id string, zone string, networkInterface string, accessConfig *compute.AccessConfig) error
 	AttachDisk(id string, diskLink string) (string, string, error)
@@ -39,6 +35,8 @@ type Properties struct {
 	TargetPool        string
 	BackendService    string
 	Tags              Tags
+	AcceleratorType   string
+	AcceleratorCount  int
 }
 
 type ServiceScopes []string

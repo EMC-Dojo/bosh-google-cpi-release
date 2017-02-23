@@ -55,10 +55,16 @@ type VMCloudProperties struct {
 	Tags                instance.Tags    `json:"tags,omitempty"`
 	EphemeralExternalIP *bool            `json:"ephemeral_external_ip,omitempty"`
 	IPForwarding        *bool            `json:"ip_forwarding,omitempty"`
+	AcceleratorType     string           `json:"accelerator_type,omitempty"`
+	AcceleratorCount    int              `json:"accelerator_count,omitempty"`
 }
 
 func (n VMCloudProperties) Validate() error {
 	if err := n.Tags.Validate(); err != nil {
+		return err
+	}
+
+	if err := n.Accelerator.Validate(); err != nil {
 		return err
 	}
 

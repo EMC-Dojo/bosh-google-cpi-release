@@ -1,9 +1,6 @@
 package fakes
 
-import (
-	"bosh-google-cpi/google/instance_service"
-	"google.golang.org/api/compute/v1"
-)
+import "bosh-google-cpi/google/instance_service"
 
 type FakeInstanceService struct {
 	AddAccessConfigCalled bool
