@@ -39,7 +39,13 @@ type Properties struct {
 	TargetPool        string
 	BackendService    string
 	Tags              Tags
+	Accelerator       Accelerator
 }
 
 type ServiceScopes []string
 type ServiceAccount string
+
+type Accelerator struct {
+	Type  string
+	Count int64
+}

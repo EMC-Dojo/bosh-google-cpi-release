@@ -7,6 +7,7 @@ import (
 	bosherr "github.com/cloudfoundry/bosh-utils/errors"
 
 	"bosh-google-cpi/api"
+	"bosh-google-cpi/google/accelerator_service"
 	"bosh-google-cpi/google/disk_service"
 	"bosh-google-cpi/google/disk_type_service"
 	"bosh-google-cpi/google/image_service"
@@ -19,6 +20,7 @@ import (
 
 type CreateVM struct {
 	vmService             instance.Service
+	acceleratorService    accelerator.Service
 	diskService           disk.Service
 	diskTypeService       disktype.Service
 	imageService          image.Service
@@ -32,6 +34,7 @@ type CreateVM struct {
 
 func NewCreateVM(
 	vmService instance.Service,
+	acceleratorService accelerator.Service,
 	diskService disk.Service,
 	diskTypeService disktype.Service,
 	imageService image.Service,
@@ -44,6 +47,7 @@ func NewCreateVM(
 ) CreateVM {
 	return CreateVM{
 		vmService:             vmService,
+		acceleratorService:    acceleratorService,
 		diskService:           diskService,
 		diskTypeService:       diskTypeService,
 		imageService:          imageService,
@@ -59,6 +63,12 @@ func NewCreateVM(
 func (cv CreateVM) Run(agentID string, stemcellCID StemcellCID, cloudProps VMCloudProperties, networks Networks, disks []DiskCID, env Environment) (VMCID, error) {
 	// Find zone
 	zone, err := cv.findZone(cloudProps.Zone, disks)
+	if err != nil {
+		return "", err
+	}
+
+	// Find accelerator
+	acceleratorLink, err := cv.findAcceleratorLink(cloudProps, zone)
 	if err != nil {
 		return "", err
 	}
@@ -113,6 +123,11 @@ func (cv CreateVM) Run(agentID string, stemcellCID StemcellCID, cloudProps VMClo
 		return "", bosherr.WrapError(err, "Creating VM")
 	}
 
+	instanceAccelerator := instance.Accelerator{
+		Type:  acceleratorLink,
+		Count: cloudProps.Accelerator.Count,
+	}
+
 	// Parse VM properties
 	vmProps := &instance.Properties{
 		Zone:              zone,
@@ -129,6 +144,7 @@ func (cv CreateVM) Run(agentID string, stemcellCID StemcellCID, cloudProps VMClo
 		TargetPool:        cloudProps.TargetPool,
 		BackendService:    cloudProps.BackendService,
 		Tags:              cloudProps.Tags,
+		Accelerator:       instanceAccelerator,
 	}
 
 	// Create VM
@@ -183,6 +199,29 @@ func (cv CreateVM) findZone(zoneName string, disks []DiskCID) (string, error) {
 	}
 
 	return "", fmt.Errorf("Could not find zone %q", zoneName)
+}
+
+func (cv CreateVM) findAcceleratorLink(cloudProps VMCloudProperties, zone string) (string, error) {
+	if cloudProps.Accelerator.Type == "" {
+		return "", nil
+	}
+
+	if cloudProps.Accelerator.Count <= 0 {
+		return "", bosherr.Errorf("Creating vm: %d is invalid for accelerator count", cloudProps.Accelerator.Count)
+	}
+
+	foundAccelerator, found, err := cv.acceleratorService.Find(cloudProps.Accelerator.Type, zone)
+	if err != nil {
+		return "", bosherr.WrapError(err, "Creating vm")
+	}
+	if !found {
+		return "", bosherr.Errorf("Creating vm: accelerator: '%s' does not exist", cloudProps.Accelerator.Type)
+	}
+	if cloudProps.Accelerator.Count > foundAccelerator.Limit {
+		return "", bosherr.Errorf("Creating vm: accelerator: '%s' exceeds the limit: %d", foundAccelerator.Type, foundAccelerator.Limit)
+	}
+
+	return foundAccelerator.SelfLink, nil
 }
 
 func isGcpImageURL(s string) bool {

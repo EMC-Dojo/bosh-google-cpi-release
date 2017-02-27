@@ -11,6 +11,7 @@ import (
 	clientfakes "bosh-google-cpi/google/client/fakes"
 
 	"bosh-google-cpi/config"
+	"bosh-google-cpi/google/accelerator_service"
 	"bosh-google-cpi/google/address_service"
 	"bosh-google-cpi/google/backendservice_service"
 	"bosh-google-cpi/google/client"
@@ -54,6 +55,7 @@ var _ = Describe("ConcreteFactory", func() {
 
 	var (
 		operationService      operation.GoogleOperationService
+		acceleratorService    accelerator.Service
 		addressService        address.Service
 		diskService           disk.Service
 		diskTypeService       disktype.Service
@@ -86,6 +88,12 @@ var _ = Describe("ConcreteFactory", func() {
 		operationService = operation.NewGoogleOperationService(
 			googleClient.Project(),
 			googleClient.ComputeService(),
+			googleClient.ComputeBetaService(),
+			logger,
+		)
+
+		acceleratorService = accelerator.NewGoogleAcceleratorService(
+			googleClient.Project(),
 			googleClient.ComputeBetaService(),
 			logger,
 		)
@@ -249,6 +257,7 @@ var _ = Describe("ConcreteFactory", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(action).To(Equal(NewCreateVM(
 			vmService,
+			acceleratorService,
 			diskService,
 			diskTypeService,
 			imageService,

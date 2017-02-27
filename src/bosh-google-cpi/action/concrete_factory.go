@@ -6,6 +6,7 @@ import (
 	boshuuid "github.com/cloudfoundry/bosh-utils/uuid"
 
 	"bosh-google-cpi/config"
+	"bosh-google-cpi/google/accelerator_service"
 	"bosh-google-cpi/google/address_service"
 	"bosh-google-cpi/google/backendservice_service"
 	"bosh-google-cpi/google/client"
@@ -36,6 +37,12 @@ func NewConcreteFactory(
 	operationService := operation.NewGoogleOperationService(
 		googleClient.Project(),
 		googleClient.ComputeService(),
+		googleClient.ComputeBetaService(),
+		logger,
+	)
+
+	acceleratorService := accelerator.NewGoogleAcceleratorService(
+		googleClient.Project(),
 		googleClient.ComputeBetaService(),
 		logger,
 	)
@@ -163,6 +170,7 @@ func NewConcreteFactory(
 			// VM management
 			"create_vm": NewCreateVM(
 				vmService,
+				acceleratorService,
 				diskService,
 				diskTypeService,
 				imageService,
