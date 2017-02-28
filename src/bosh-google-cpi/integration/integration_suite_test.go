@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"bosh-google-cpi/util"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"golang.org/x/net/context"
@@ -30,7 +31,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 			  "method": "create_stemcell",
 			  "arguments": ["%s", {
 				  "name": "bosh-google-kvm-ubuntu-trusty",
-				  "version": "3215",
+				  "version": "3363.1",
 				  "infrastructure": "google",
 				  "source_url": "%s"
 				}]
@@ -64,7 +65,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 })
 
 var _ = SynchronizedAfterSuite(func() {}, func() {
-	cleanVMs()
+	// cleanVMs()
 	request := fmt.Sprintf(`{
 			  "method": "delete_stemcell",
 			  "arguments": ["%v"]

@@ -170,6 +170,54 @@ var _ = Describe("VM", func() {
 		assertSucceeds(request)
 	})
 
+	FIt("can create a VM with accelerator", func() {
+		By("creating a VM")
+		var vmCID string
+		acceleratorType := "nvidia-tesla-k80"
+		request := fmt.Sprintf(`{
+			  "method": "create_vm",
+			  "arguments": [
+					"agent",
+					"%v",
+					{
+				  	"machine_type": "n1-standard-1",
+						"zone": "%v",
+						"ephemeral_external_ip": true
+					},
+					{
+				  	"default": {
+							"type": "dynamic",
+							"cloud_properties": {
+								"tags": ["integration-delete"],
+								"network_name": "%v",
+								"accelerator": {
+									"type": "%v",
+									"count": 1
+								}
+							}
+				  	}
+					},
+					[],
+					{}
+			  ]
+			}`, existingStemcell, zone, networkName, acceleratorType)
+		vmCID = assertSucceedsWithResult(request).(string)
+		assertValidVMB(vmCID, func(instance *computebeta.Instance) {
+			fmt.Printf("instance: %+v\nvmcid: %s", instance, vmCID)
+			// Expect(vmCID).To(Equal("Something!!!"))
+			// Expect(instance.MachineType).To(Equal("Something Else!!!"))
+			// Expect(len(instance.GuestAccelerators)).To(Equal(1))
+			// Expect(instance.GuestAccelerators[0]).To(ConsistOf(acceleratorType))
+		})
+
+		By("deleting the VM")
+		request = fmt.Sprintf(`{
+			  "method": "delete_vm",
+			  "arguments": ["%v"]
+			}`, vmCID)
+		assertSucceeds(request)
+	})
+
 	It("can create a VM with overlapping VM and network tags and VM properties that override network properties", func() {
 		By("creating a VM")
 		var vmCID string
